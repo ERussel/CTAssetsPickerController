@@ -195,7 +195,7 @@
     return YES;
 }
 
-- (NSUInteger)supportedInterfaceOrientations
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
     return UIInterfaceOrientationMaskAllButUpsideDown;
 }
@@ -630,9 +630,13 @@
         else if (self.assets.count > 0)
         {
             [self.collectionView reloadData];
-            [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:self.assets.count-1 inSection:0]
-                                        atScrollPosition:UICollectionViewScrollPositionTop
-                                                animated:YES];
+            
+            // ios 9 autoscroll issue
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:self.assets.count-1 inSection:0]
+                                            atScrollPosition:UICollectionViewScrollPositionTop
+                                                    animated:NO];
+            });
         }
     };
     
@@ -783,7 +787,17 @@
 {
     NSMutableArray *assets = [[NSMutableArray alloc] init];
     
-    for (NSIndexPath *indexPath in self.collectionView.indexPathsForSelectedItems)
+    NSArray *sortedIndexPaths = [self.collectionView.indexPathsForSelectedItems sortedArrayUsingComparator:^NSComparisonResult(NSIndexPath *indexPath1, NSIndexPath *indexPath2){
+        if (indexPath1.item < indexPath2.item) {
+            return NSOrderedAscending;
+        }else if(indexPath1.item > indexPath2.item){
+            return NSOrderedDescending;
+        }else{
+            return NSOrderedSame;
+        }
+    }];
+    
+    for (NSIndexPath *indexPath in sortedIndexPaths)
     {
         [assets addObject:[self.assets objectAtIndex:indexPath.item]];
     }
